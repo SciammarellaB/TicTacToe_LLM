@@ -13,6 +13,7 @@ Este projeto tem como objetivo permitir que você jogue um jogo da velha (Tic-Ta
 - Plataforma Ollama instalada e configurada.
 - Um modelo LLM disponível na Ollama.
 - .NET 8.0 ou superior.
+- MonoGame Framework instalado (necessário para rodar o jogo). [Site oficial: https://www.monogame.net/]
 
 ## English
 
@@ -27,3 +28,4 @@ This project aims to let you play Tic-Tac-Toe against a large language model (LL
 - Ollama platform installed and configured.
 - An LLM model available on Ollama.
 - .NET 8.0 or higher.
+- MonoGame Framework installed (required to run the game). [Official website: https://www.monogame.net/]

@@ -27,4 +27,3 @@ This project aims to let you play Tic-Tac-Toe against a large language model (LL
 - Ollama platform installed and configured.
 - An LLM model available on Ollama.
 - .NET 8.0 or higher.
-# TicTacToe_LLM

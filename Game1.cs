@@ -1,4 +1,6 @@
-﻿using System.Net.Http;
+﻿using System;
+using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -18,11 +20,15 @@ public class Game1 : Game
     int width = 400;
     int height = 400;
     public int[,] map = new int[3,3];
+    public Tuple<int, int, string> ultimasJogadas;
 
     //JOGADORES
     public int player1 = 1;
     public int player2 = 2;
     public int jogadorAtual = 1;
+
+    //CHAT
+    public List<ChatModel> mensagens = new List<ChatModel>();
 
     public Game1()
     {
@@ -37,6 +43,14 @@ public class Game1 : Game
         ChangeScreenResolution(width, height);
         SetFrameRate(15);
         base.Initialize();
+
+        //INICIALIZAR IA
+        mensagens.Add(new ChatModel("system", "Você está numa partida de jogo da velha."));
+        mensagens.Add(new ChatModel("system", "O tabuleiro é uma matriz 3x3, onde as linhas e colunas são numeradas de 0 a 2."));
+        mensagens.Add(new ChatModel("system", "Você não pode jogar em uma casa que já tenha sido escolhida."));
+        mensagens.Add(new ChatModel("system", "Verifique na conversa se a casa que você deseja jogar já não foi escolhida."));
+        mensagens.Add(new ChatModel("system", "Para ganhar o jogo, você deve alinhar 3 símbolos iguais na horizontal, vertical ou diagonal."));
+        mensagens.Add(new ChatModel("system", "O retorno da sua jogada deverá ser apenas os números das coordenadas da matriz (linha,coluna) que deseja jogar."));
     }
 
     protected override void LoadContent()
@@ -63,20 +77,25 @@ public class Game1 : Game
             jogadorAtual = player1;
         }
 
-        ObterCasaMouse(Mouse.GetState().X, Mouse.GetState().Y, out int linha, out int coluna);
+        var casa = ObterCasaMouse(Mouse.GetState().X, Mouse.GetState().Y);
 
         if (jogadorAtual == player1)
         {
-            if (Mouse.GetState().LeftButton == ButtonState.Pressed && linha != -1 && coluna != -1)
+            if (Mouse.GetState().LeftButton == ButtonState.Pressed && casa.Item1 != -1 && casa.Item2 != -1)
             {
-                GravarJogada(linha, coluna, player1);
+                GravarJogada(casa.Item1, casa.Item2, player1);
+                ultimasJogadas = new Tuple<int, int, string>(casa.Item1, casa.Item2, "Jogador 1");
+                mensagens.Add(new ChatModel("user", $"Jogador 1 jogou na casa {casa.Item1},{casa.Item2}"));
                 jogadorAtual = player2;
             }
 
         }
         else
         {
-            JogadaIA(false).GetAwaiter().GetResult();
+            var jogadaIA = JogadaIA().GetAwaiter().GetResult();
+            GravarJogada(jogadaIA.Item1, jogadaIA.Item2, player2);
+            ultimasJogadas = new Tuple<int, int, string>(jogadaIA.Item1, jogadaIA.Item2, "Jogador 2");
+            mensagens.Add(new ChatModel("user", $"Jogador 2 jogou na casa {jogadaIA.Item1},{jogadaIA.Item2}"));
             jogadorAtual = player1;
         }
 
@@ -136,7 +155,7 @@ public class Game1 : Game
         _graphics.PreferredBackBufferHeight = height;
         _graphics.ApplyChanges();
     }
-    public void ObterCasaMouse(int mouseX, int mouseY, out int linha, out int coluna)
+    public Tuple<int, int> ObterCasaMouse(int mouseX, int mouseY)
     {
         var w = width / 3;
         var h = height / 3;
@@ -144,13 +163,11 @@ public class Game1 : Game
         // Verifica se o mouse está dentro da janela
         if (mouseX < 0 || mouseX >= width || mouseY < 0 || mouseY >= height)
         {
-            linha = -1;
-            coluna = -1;
-            return;
+            return new Tuple<int, int>(-1, -1);
         }
-
-        coluna = mouseX / w;
-        linha = mouseY / h;
+        var coluna = mouseX / w;
+        var linha = mouseY / h;
+        return new Tuple<int, int>(linha, coluna);
     }
     public void GravarJogada(int linha, int coluna, int player)
     {
@@ -188,7 +205,7 @@ public class Game1 : Game
     }
     public void ResetarMapa()
     {
-    map = new int[3,3];
+        map = new int[3,3];
     }
     public bool MapaCompleto()
     {
@@ -201,39 +218,25 @@ public class Game1 : Game
     #endregion
 
     #region OLLAMA
-    public async Task JogadaIA(bool invalida)
+    public async Task<Tuple<int, int>> JogadaIA()
     {
         using var httpClient = new HttpClient();
-        var prompt = "Você está numa partida de jogo da velha, você é o jogador 2. " +
-            "O tabuleiro está representado por 3 linhas e 3 colunas. " +
-            "Cada célula pode estar vazia (0), ocupada pelo jogador 1 ou pelo jogador 2. " +
-            "Jogue apenas em células com 0. Não jogue em casas já ocupadas (com 1 ou 2). " +
-            "Se não houver jogadas possíveis, responda com 'Nenhuma jogada possível'. " +
-            "Responda apenas com a coordenada que deseja jogar sem nenhum texto extra, no formato 'linha,coluna' Exemplo: 1,0. " +
-            "Aqui está o estado atual do tabuleiro:" +
-            $"{map[0,0]},{map[0,1]},{map[0,2]} / " +
-            $"{map[1,0]},{map[1,1]},{map[1,2]} / " +
-            $"{map[2,0]},{map[2,1]},{map[2,2]} / ";
-
-        if (invalida)
-        {
-            prompt += "A jogada anterior foi inválida pois a casa já estava ocupada.";
-        }
-
         var requestBody = new
         {
             model = "llama3.1",
+            stream = false,
             options = new
             {
-                // temperature = 0.2
+                temperature = 0
             },
-            prompt = prompt,
-            stream = false
+            messages = mensagens
         };
+
         var content = new StringContent(System.Text.Json.JsonSerializer.Serialize(requestBody), System.Text.Encoding.UTF8, "application/json");
-        var response = await httpClient.PostAsync("http://localhost:11434/api/generate", content);
+        var response = await httpClient.PostAsync("http://localhost:11434/api/chat", content);
         response.EnsureSuccessStatusCode();
         var responseString = await response.Content.ReadAsStringAsync();
+        System.Console.WriteLine($"{responseString}");
         var match = System.Text.RegularExpressions.Regex.Match(responseString, @"\b[0-2],[0-2]\b");
         if (match.Success)
         {
@@ -243,18 +246,38 @@ public class Game1 : Game
 
             // Só grava jogada se a casa estiver vazia
             if (map[linha, coluna] == 0)
-                GravarJogada(linha, coluna, player2);
+            {
+                return new Tuple<int, int>(linha, coluna);
+            }
             else
             {
                 System.Console.WriteLine($"Jogada inválida sugerida pela IA: {linha},{coluna}");
-                // await JogadaIA(true);
+                return new Tuple<int, int>(-1, -1);
             }
         }
         else
         {
             System.Console.WriteLine("Nenhuma jogada possível");
+            return new Tuple<int, int>(-1, -1);
         }
-        System.Console.WriteLine(responseString);
     }
     #endregion
+}
+
+
+public class ChatModel
+{
+    public string role { get; set; }
+    public string content { get; set; }
+
+    public ChatModel()
+    {
+
+    }
+
+    public ChatModel(string role, string content)
+    {
+        this.role = role;
+        this.content = content;
+    }
 }

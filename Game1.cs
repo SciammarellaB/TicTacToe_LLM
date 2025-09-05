@@ -30,6 +30,9 @@ public class Game1 : Game
     //CHAT
     public List<ChatModel> mensagens = new List<ChatModel>();
 
+    //
+    bool gameOver = false;
+
     public Game1()
     {
         _graphics = new GraphicsDeviceManager(this);
@@ -40,17 +43,20 @@ public class Game1 : Game
     protected override void Initialize()
     {
         // TODO: Add your initialization logic here
-        ChangeScreenResolution(width, height);
         SetFrameRate(15);
-        base.Initialize();
+        ChangeScreenResolution(400, 400);
 
         //INICIALIZAR IA
         mensagens.Add(new ChatModel("system", "Você está numa partida de jogo da velha."));
         mensagens.Add(new ChatModel("system", "O tabuleiro é uma matriz 3x3, onde as linhas e colunas são numeradas de 0 a 2."));
-        mensagens.Add(new ChatModel("system", "Você não pode jogar em uma casa que já tenha sido escolhida."));
-        mensagens.Add(new ChatModel("system", "Verifique na conversa se a casa que você deseja jogar já não foi escolhida."));
-        mensagens.Add(new ChatModel("system", "Para ganhar o jogo, você deve alinhar 3 símbolos iguais na horizontal, vertical ou diagonal."));
+        mensagens.Add(new ChatModel("system", "A ideia do jogo é que dois jogadores se alternem para colocar seus símbolos (X e O) em casas vazias do tabuleiro."));
+        mensagens.Add(new ChatModel("system", "Para ganhar o jogo, é necessário alinhar três dos seus símbolos em uma linha, coluna ou diagonal. Como estamos numa matriz 3x3, o alinhamento poder acontecer (0,0),(0,1),(0,2) ou (1,0),(1,1),(1,2) ou (2,0),(2,1),(2,2) ou (0,0),(1,0),(2,0) ou (0,1),(1,1),(2,1) ou (0,2),(1,2),(2,2) ou (0,0),(1,1),(2,2) ou (0,2),(1,1),(2,0)."));
+        mensagens.Add(new ChatModel("system", "Algumas jogadas podem ser para impedir que o adversário consiga alinhar três símbolos. Isso acontece quando o adversário já tem dois símbolos alinhados e você precisa jogar na terceira casa para bloquear a vitória dele."));
+        mensagens.Add(new ChatModel("system", "O jogo pode terminar empatado, caso todas as casas do tabuleiro sejam preenchidas sem que nenhum dos jogadores tenha conseguido alinhar três símbolos."));
+        mensagens.Add(new ChatModel("system", "Você não pode jogar em uma casa que já tenha sido escolhidas pelos jogadores."));
         mensagens.Add(new ChatModel("system", "O retorno da sua jogada deverá ser apenas os números das coordenadas da matriz (linha,coluna) que deseja jogar."));
+
+        base.Initialize();
     }
 
     protected override void LoadContent()
@@ -67,36 +73,40 @@ public class Game1 : Game
             Exit();
 
         // TODO: Add your update logic here
-
-        TestarGanhador();
-
-        if (MapaCompleto())
+        if (!gameOver)
         {
-            System.Console.WriteLine("Empate");
-            ResetarMapa();
-            jogadorAtual = player1;
-        }
+            var casa = ObterCasaMouse(Mouse.GetState().X, Mouse.GetState().Y);
 
-        var casa = ObterCasaMouse(Mouse.GetState().X, Mouse.GetState().Y);
-
-        if (jogadorAtual == player1)
-        {
-            if (Mouse.GetState().LeftButton == ButtonState.Pressed && casa.Item1 != -1 && casa.Item2 != -1)
+            if (jogadorAtual == player1)
             {
-                GravarJogada(casa.Item1, casa.Item2, player1);
-                ultimasJogadas = new Tuple<int, int, string>(casa.Item1, casa.Item2, "Jogador 1");
-                mensagens.Add(new ChatModel("user", $"Jogador 1 jogou na casa {casa.Item1},{casa.Item2}"));
-                jogadorAtual = player2;
-            }
+                if (Mouse.GetState().LeftButton == ButtonState.Pressed && casa.Item1 != -1 && casa.Item2 != -1)
+                {
+                    GravarJogada(casa.Item1, casa.Item2, player1);
+                    ultimasJogadas = new Tuple<int, int, string>(casa.Item1, casa.Item2, "Jogador 1");
+                    mensagens.Add(new ChatModel("user", $"Jogador 1 jogou na casa {casa.Item1},{casa.Item2}"));
+                    jogadorAtual = player2;
 
+                    TestarGanhador();
+                }
+            }
+            else
+            {
+                var jogadaIA = JogadaIA().GetAwaiter().GetResult();
+                GravarJogada(jogadaIA.Item1, jogadaIA.Item2, player2);
+                ultimasJogadas = new Tuple<int, int, string>(jogadaIA.Item1, jogadaIA.Item2, "Jogador 2");
+                mensagens.Add(new ChatModel("user", $"Jogador 2 jogou na casa {jogadaIA.Item1},{jogadaIA.Item2}"));
+                jogadorAtual = player1;
+
+                TestarGanhador();
+            }
         }
         else
         {
-            var jogadaIA = JogadaIA().GetAwaiter().GetResult();
-            GravarJogada(jogadaIA.Item1, jogadaIA.Item2, player2);
-            ultimasJogadas = new Tuple<int, int, string>(jogadaIA.Item1, jogadaIA.Item2, "Jogador 2");
-            mensagens.Add(new ChatModel("user", $"Jogador 2 jogou na casa {jogadaIA.Item1},{jogadaIA.Item2}"));
-            jogadorAtual = player1;
+            if (Keyboard.GetState().IsKeyDown(Keys.Space))
+            {
+                ResetarJogo();
+                gameOver = false;
+            }
         }
 
         base.Update(gameTime);
@@ -165,8 +175,9 @@ public class Game1 : Game
         {
             return new Tuple<int, int>(-1, -1);
         }
-        var coluna = mouseX / w;
-        var linha = mouseY / h;
+        var coluna = (int)Math.Round((double)(mouseX / w), MidpointRounding.AwayFromZero);
+        var linha = (int)Math.Round((double)(mouseY / h), MidpointRounding.AwayFromZero);
+
         return new Tuple<int, int>(linha, coluna);
     }
     public void GravarJogada(int linha, int coluna, int player)
@@ -179,33 +190,74 @@ public class Game1 : Game
         //LINHAS
         for (int i = 0; i < 3; i++)
         {
-            if (map[i,0] == player1 && map[i,1] == player1 && map[i,2] == player1)
-                System.Console.WriteLine("Player 1 Venceu");
-            if (map[i,0] == player2 && map[i,1] == player2 && map[i,2] == player2)
-                System.Console.WriteLine("Player 2 Venceu");
+            if (map[i, 0] == player1 && map[i, 1] == player1 && map[i, 2] == player1)
+            {
+                gameOver = true;
+                Console.WriteLine("Player 1 Venceu");
+                return;
+            }
+            if (map[i, 0] == player2 && map[i, 1] == player2 && map[i, 2] == player2)
+            {
+                gameOver = true;
+                Console.WriteLine("Player 2 Venceu");
+                return;
+            }
         }
         //COLUNAS
         for (int i = 0; i < 3; i++)
         {
-            if (map[0,i] == player1 && map[1,i] == player1 && map[2,i] == player1)
-                System.Console.WriteLine("Player 1 Venceu");
-            if (map[0,i] == player2 && map[1,i] == player2 && map[2,i] == player2)
-                System.Console.WriteLine("Player 2 Venceu");
+            if (map[0, i] == player1 && map[1, i] == player1 && map[2, i] == player1)
+            {
+                gameOver = true;
+                Console.WriteLine("Player 1 Venceu");
+                return;
+            }
+            if (map[0, i] == player2 && map[1, i] == player2 && map[2, i] == player2)
+            {
+                gameOver = true;
+                Console.WriteLine("Player 2 Venceu");
+                return;
+            }
         }
         //DIAGONAIS
-        if (map[0,0] == player1 && map[1,1] == player1 && map[2,2] == player1)
-            System.Console.WriteLine("Player 1 Venceu");
-        if (map[0,0] == player2 && map[1,1] == player2 && map[2,2] == player2)
-            System.Console.WriteLine("Player 2 Venceu");
+        if (map[0, 0] == player1 && map[1, 1] == player1 && map[2, 2] == player1)
+        {
+            gameOver = true;
+            Console.WriteLine("Player 1 Venceu");
+            return;
+        }
+        if (map[0, 0] == player2 && map[1, 1] == player2 && map[2, 2] == player2)
+        {
+            gameOver = true;
+            Console.WriteLine("Player 2 Venceu");
+            return;
+        }
+        if (map[0, 2] == player1 && map[1, 1] == player1 && map[2, 0] == player1)
+        {
+            gameOver = true;
+            Console.WriteLine("Player 1 Venceu");
+            return;
+        }
+        if (map[0, 2] == player2 && map[1, 1] == player2 && map[2, 0] == player2)
+        {
+            gameOver = true;
+            Console.WriteLine("Player 2 Venceu");
+            return;
+        }
 
-        if (map[0,2] == player1 && map[1,1] == player1 && map[2,0] == player1)
-            System.Console.WriteLine("Player 1 Venceu");
-        if (map[0,2] == player2 && map[1,1] == player2 && map[2,0] == player2)
-            System.Console.WriteLine("Player 2 Venceu");
+        if (MapaCompleto())
+        {
+            gameOver = true;
+            Console.WriteLine("Empate");
+            return;
+        }
     }
-    public void ResetarMapa()
+    public void ResetarJogo()
     {
-        map = new int[3,3];
+        map = new int[3, 3];
+        gameOver = false;
+        mensagens.RemoveRange(8, mensagens.Count - 8); // Mantém apenas as mensagens iniciais do sistema
+        jogadorAtual = player1;
     }
     public bool MapaCompleto()
     {

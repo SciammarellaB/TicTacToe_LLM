@@ -30,7 +30,8 @@ public class Game1 : Game
     //CHAT
     public List<ChatModel> mensagens = new List<ChatModel>();
 
-    //
+    //HISTÓRICO
+    int numeroJogo = 1;
     bool gameOver = false;
 
     public Game1()
@@ -45,16 +46,20 @@ public class Game1 : Game
         // TODO: Add your initialization logic here
         SetFrameRate(15);
         ChangeScreenResolution(400, 400);
+        numeroJogo = 1;
 
         //INICIALIZAR IA
-        mensagens.Add(new ChatModel("system", "Você está numa partida de jogo da velha."));
+        mensagens.Add(new ChatModel("system", "Você está numa partida de jogo da velha e você é o Jogador 2."));
         mensagens.Add(new ChatModel("system", "O tabuleiro é uma matriz 3x3, onde as linhas e colunas são numeradas de 0 a 2."));
         mensagens.Add(new ChatModel("system", "A ideia do jogo é que dois jogadores se alternem para colocar seus símbolos (X e O) em casas vazias do tabuleiro."));
         mensagens.Add(new ChatModel("system", "Para ganhar o jogo, é necessário alinhar três dos seus símbolos em uma linha, coluna ou diagonal. Como estamos numa matriz 3x3, o alinhamento poder acontecer (0,0),(0,1),(0,2) ou (1,0),(1,1),(1,2) ou (2,0),(2,1),(2,2) ou (0,0),(1,0),(2,0) ou (0,1),(1,1),(2,1) ou (0,2),(1,2),(2,2) ou (0,0),(1,1),(2,2) ou (0,2),(1,1),(2,0)."));
         mensagens.Add(new ChatModel("system", "Algumas jogadas podem ser para impedir que o adversário consiga alinhar três símbolos. Isso acontece quando o adversário já tem dois símbolos alinhados e você precisa jogar na terceira casa para bloquear a vitória dele."));
         mensagens.Add(new ChatModel("system", "O jogo pode terminar empatado, caso todas as casas do tabuleiro sejam preenchidas sem que nenhum dos jogadores tenha conseguido alinhar três símbolos."));
+        //mensagens.Add(new ChatModel("system", "Será mantido um histórico das partidas anteriores, para que você possa analisar as jogadas feitas e aprender com elas."));
+        //mensagens.Add(new ChatModel("system", "Quando um jogador fizer uma jogada inválida, ele deverá jogar novamente. É possível utilizar o histórico para entender qual a jogada foi invalidada."));
         mensagens.Add(new ChatModel("system", "Você não pode jogar em uma casa que já tenha sido escolhidas pelos jogadores."));
         mensagens.Add(new ChatModel("system", "O retorno da sua jogada deverá ser apenas os números das coordenadas da matriz (linha,coluna) que deseja jogar."));
+        mensagens.Add(new ChatModel("agent", $"Iniciando jogo número: {numeroJogo}."));
 
         base.Initialize();
     }
@@ -106,6 +111,8 @@ public class Game1 : Game
             {
                 ResetarJogo();
                 gameOver = false;
+                numeroJogo++;
+                mensagens.Add(new ChatModel("agent", $"Iniciando jogo número: {numeroJogo}."));
             }
         }
 
@@ -194,12 +201,14 @@ public class Game1 : Game
             {
                 gameOver = true;
                 Console.WriteLine("Player 1 Venceu");
+                mensagens.Add(new ChatModel("agent", "Player 1 Venceu"));
                 return;
             }
             if (map[i, 0] == player2 && map[i, 1] == player2 && map[i, 2] == player2)
             {
                 gameOver = true;
                 Console.WriteLine("Player 2 Venceu");
+                mensagens.Add(new ChatModel("agent", "Player 2 Venceu"));
                 return;
             }
         }
@@ -210,12 +219,14 @@ public class Game1 : Game
             {
                 gameOver = true;
                 Console.WriteLine("Player 1 Venceu");
+                mensagens.Add(new ChatModel("agent", "Player 1 Venceu"));
                 return;
             }
             if (map[0, i] == player2 && map[1, i] == player2 && map[2, i] == player2)
             {
                 gameOver = true;
                 Console.WriteLine("Player 2 Venceu");
+                mensagens.Add(new ChatModel("agent", "Player 2 Venceu"));
                 return;
             }
         }
@@ -224,24 +235,28 @@ public class Game1 : Game
         {
             gameOver = true;
             Console.WriteLine("Player 1 Venceu");
+            mensagens.Add(new ChatModel("agent", "Player 1 Venceu"));
             return;
         }
         if (map[0, 0] == player2 && map[1, 1] == player2 && map[2, 2] == player2)
         {
             gameOver = true;
             Console.WriteLine("Player 2 Venceu");
+            mensagens.Add(new ChatModel("agent", "Player 2 Venceu"));
             return;
         }
         if (map[0, 2] == player1 && map[1, 1] == player1 && map[2, 0] == player1)
         {
             gameOver = true;
             Console.WriteLine("Player 1 Venceu");
+            mensagens.Add(new ChatModel("agent", "Player 1 Venceu"));
             return;
         }
         if (map[0, 2] == player2 && map[1, 1] == player2 && map[2, 0] == player2)
         {
             gameOver = true;
             Console.WriteLine("Player 2 Venceu");
+            mensagens.Add(new ChatModel("agent", "Player 2 Venceu"));
             return;
         }
 
@@ -249,6 +264,7 @@ public class Game1 : Game
         {
             gameOver = true;
             Console.WriteLine("Empate");
+            mensagens.Add(new ChatModel("agent", "Empate"));
             return;
         }
     }
@@ -256,7 +272,7 @@ public class Game1 : Game
     {
         map = new int[3, 3];
         gameOver = false;
-        mensagens.RemoveRange(8, mensagens.Count - 8); // Mantém apenas as mensagens iniciais do sistema
+        //mensagens.RemoveRange(8, mensagens.Count - 8); // Mantém apenas as mensagens iniciais do sistema
         jogadorAtual = player1;
     }
     public bool MapaCompleto()
@@ -304,13 +320,15 @@ public class Game1 : Game
             else
             {
                 System.Console.WriteLine($"Jogada inválida sugerida pela IA: {linha},{coluna}");
-                return new Tuple<int, int>(-1, -1);
+                mensagens.Add(new ChatModel("user", $"Jogador 2 fez uma jogada inválida: {linha},{coluna}"));
+                return await JogadaIA();
             }
         }
         else
         {
             System.Console.WriteLine("Nenhuma jogada possível");
-            return new Tuple<int, int>(-1, -1);
+            return await JogadaIA();    
+            // return new Tuple<int, int>(-1, -1);
         }
     }
     #endregion

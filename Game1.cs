@@ -49,17 +49,16 @@ public class Game1 : Game
         numeroJogo = 1;
 
         //INICIALIZAR IA
-        mensagens.Add(new ChatModel("system", "Você está numa partida de jogo da velha e você é o Jogador 2."));
-        mensagens.Add(new ChatModel("system", "O tabuleiro é uma matriz 3x3, onde as linhas e colunas são numeradas de 0 a 2."));
-        mensagens.Add(new ChatModel("system", "A ideia do jogo é que dois jogadores se alternem para colocar seus símbolos (X e O) em casas vazias do tabuleiro."));
-        mensagens.Add(new ChatModel("system", "Para ganhar o jogo, é necessário alinhar três dos seus símbolos em uma linha, coluna ou diagonal. Como estamos numa matriz 3x3, o alinhamento poder acontecer (0,0),(0,1),(0,2) ou (1,0),(1,1),(1,2) ou (2,0),(2,1),(2,2) ou (0,0),(1,0),(2,0) ou (0,1),(1,1),(2,1) ou (0,2),(1,2),(2,2) ou (0,0),(1,1),(2,2) ou (0,2),(1,1),(2,0)."));
-        mensagens.Add(new ChatModel("system", "Algumas jogadas podem ser para impedir que o adversário consiga alinhar três símbolos. Isso acontece quando o adversário já tem dois símbolos alinhados e você precisa jogar na terceira casa para bloquear a vitória dele."));
-        mensagens.Add(new ChatModel("system", "O jogo pode terminar empatado, caso todas as casas do tabuleiro sejam preenchidas sem que nenhum dos jogadores tenha conseguido alinhar três símbolos."));
-        //mensagens.Add(new ChatModel("system", "Será mantido um histórico das partidas anteriores, para que você possa analisar as jogadas feitas e aprender com elas."));
-        //mensagens.Add(new ChatModel("system", "Quando um jogador fizer uma jogada inválida, ele deverá jogar novamente. É possível utilizar o histórico para entender qual a jogada foi invalidada."));
-        mensagens.Add(new ChatModel("system", "Você não pode jogar em uma casa que já tenha sido escolhidas pelos jogadores."));
-        mensagens.Add(new ChatModel("system", "O retorno da sua jogada deverá ser apenas os números das coordenadas da matriz (linha,coluna) que deseja jogar."));
-        mensagens.Add(new ChatModel("agent", $"Iniciando jogo número: {numeroJogo}."));
+        mensagens.Add(new ChatModel("system", "Voce esta numa partida de jogo da velha jogando como o Jogador 2."));
+        mensagens.Add(new ChatModel("system", "O tabuleiro e dividido em uma matriz no formato 3x3, onde cada casa e representada por coordenadas (linha,coluna) que vao de 0 a 2."));
+        mensagens.Add(new ChatModel("system", "Para ganhar o jogo, e necessario alinhar tres jogadas em uma linha, coluna ou diagonal. Como estamos numa matriz 3x3, o alinhamento pode acontecer (0,0),(0,1),(0,2) ou (1,0),(1,1),(1,2) ou (2,0),(2,1),(2,2) ou (0,0),(1,0),(2,0) ou (0,1),(1,1),(2,1) ou (0,2),(1,2),(2,2) ou (0,0),(1,1),(2,2) ou (0,2),(1,1),(2,0)."));
+        mensagens.Add(new ChatModel("system", "Um dos pontos do jogo e que voce deve tentar ganhar, mas tambem impedir que o adversario ganhe. Portanto, algumas jogadas podem ser para impedir que o adversario consiga alinhar tres simbolos. Isso acontece quando o adversario ja tem dois simbolos alinhados e voce precisa jogar na terceira casa para bloquear a vitoria dele."));
+        mensagens.Add(new ChatModel("system", "O jogo pode terminar empatado, caso todas as casas do tabuleiro sejam preenchidas sem que nenhum dos jogadores tenha conseguido alinhar tres jogadas."));
+        mensagens.Add(new ChatModel("system", "Sera mantido um historico das partidas anteriores, para que voce possa analisar as jogadas feitas e aprender com elas."));
+        mensagens.Add(new ChatModel("system", "Voce nao pode jogar em uma casa que ja tenha sido escolhida pelos jogadores."));
+        mensagens.Add(new ChatModel("system", "Se nao houver jogadas possiveis, jogue na primeira casa vazia que encontrar, seguindo a ordem da matriz (0,0) ate (2,2)."));
+        mensagens.Add(new ChatModel("system", $"Responda apenas com a coordenada (linha,coluna) da sua jogada. Exemplo: 0,0"));
+        mensagens.Add(new ChatModel("system", $"Não é necessário retornar o tabuleiro atual. Apenas a sua resposta com a jogada."));
 
         base.Initialize();
     }
@@ -112,7 +111,6 @@ public class Game1 : Game
                 ResetarJogo();
                 gameOver = false;
                 numeroJogo++;
-                mensagens.Add(new ChatModel("agent", $"Iniciando jogo número: {numeroJogo}."));
             }
         }
 
@@ -272,7 +270,7 @@ public class Game1 : Game
     {
         map = new int[3, 3];
         gameOver = false;
-        //mensagens.RemoveRange(8, mensagens.Count - 8); // Mantém apenas as mensagens iniciais do sistema
+        mensagens.RemoveRange(8, mensagens.Count - 8); // Mantém apenas as mensagens iniciais do sistema
         jogadorAtual = player1;
     }
     public bool MapaCompleto()
@@ -295,7 +293,9 @@ public class Game1 : Game
             stream = false,
             options = new
             {
-                temperature = 0
+                temperature = 0,
+                top_p = 0.9,
+                max_new_tokens = 10
             },
             messages = mensagens
         };

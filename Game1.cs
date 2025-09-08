@@ -57,7 +57,7 @@ public class Game1 : Game
         mensagens.Add(new ChatModel("system", "Sera mantido um historico das partidas anteriores, para que voce possa analisar as jogadas feitas e aprender com elas."));
         mensagens.Add(new ChatModel("system", "Voce nao pode jogar em uma casa que ja tenha sido escolhida pelos jogadores."));
         mensagens.Add(new ChatModel("system", "Se nao houver jogadas possiveis, jogue na primeira casa vazia que encontrar, seguindo a ordem da matriz (0,0) ate (2,2)."));
-        mensagens.Add(new ChatModel("system", $"Responda apenas com a coordenada (linha,coluna) da sua jogada. Exemplo: 0,0"));
+        mensagens.Add(new ChatModel("system", $"Responda apenas com a coordenada (linha,coluna) da sua jogada. Exemplo: (0,0)"));
         mensagens.Add(new ChatModel("system", $"Não é necessário retornar o tabuleiro atual. Apenas a sua resposta com a jogada."));
 
         base.Initialize();
@@ -270,7 +270,7 @@ public class Game1 : Game
     {
         map = new int[3, 3];
         gameOver = false;
-        mensagens.RemoveRange(8, mensagens.Count - 8); // Mantém apenas as mensagens iniciais do sistema
+        mensagens.RemoveRange(10, mensagens.Count - 10); // Mantém apenas as mensagens iniciais do sistema
         jogadorAtual = player1;
     }
     public bool MapaCompleto()

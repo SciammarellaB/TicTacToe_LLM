@@ -52,13 +52,13 @@ public class Game1 : Game
         mensagens.Add(new ChatModel("system", "Voce esta numa partida de jogo da velha jogando como o Jogador 2."));
         mensagens.Add(new ChatModel("system", "O tabuleiro e dividido em uma matriz no formato 3x3, onde cada casa e representada por coordenadas (linha,coluna) que vao de 0 a 2."));
         mensagens.Add(new ChatModel("system", "Para ganhar o jogo, e necessario alinhar tres jogadas em uma linha, coluna ou diagonal. Como estamos numa matriz 3x3, o alinhamento pode acontecer (0,0),(0,1),(0,2) ou (1,0),(1,1),(1,2) ou (2,0),(2,1),(2,2) ou (0,0),(1,0),(2,0) ou (0,1),(1,1),(2,1) ou (0,2),(1,2),(2,2) ou (0,0),(1,1),(2,2) ou (0,2),(1,1),(2,0)."));
-        mensagens.Add(new ChatModel("system", "Um dos pontos do jogo e que voce deve tentar ganhar, mas tambem impedir que o adversario ganhe. Portanto, algumas jogadas podem ser para impedir que o adversario consiga alinhar tres simbolos. Isso acontece quando o adversario ja tem dois simbolos alinhados e voce precisa jogar na terceira casa para bloquear a vitoria dele."));
+        mensagens.Add(new ChatModel("system", "Um dos pontos do jogo e que voce deve tentar ganhar, mas tambem impedir que o adversario ganhe. Portanto, algumas jogadas podem ser para impedir que o adversario consiga alinhar tres simbolos. Exemplo: se o jogador 1 jogar em (0,0) e depois em (0,1), voce deve jogar em (0,2) para impedir que ele ganhe na proxima jogada. Outra possibilidade e jogar em (1,1) ou (2,2) para tentar ganhar voce mesmo."));
         mensagens.Add(new ChatModel("system", "O jogo pode terminar empatado, caso todas as casas do tabuleiro sejam preenchidas sem que nenhum dos jogadores tenha conseguido alinhar tres jogadas."));
-        mensagens.Add(new ChatModel("system", "Sera mantido um historico das partidas anteriores, para que voce possa analisar as jogadas feitas e aprender com elas."));
         mensagens.Add(new ChatModel("system", "Voce nao pode jogar em uma casa que ja tenha sido escolhida pelos jogadores."));
         mensagens.Add(new ChatModel("system", "Se nao houver jogadas possiveis, jogue na primeira casa vazia que encontrar, seguindo a ordem da matriz (0,0) ate (2,2)."));
-        mensagens.Add(new ChatModel("system", $"Responda apenas com a coordenada (linha,coluna) da sua jogada. Exemplo: (0,0)"));
-        mensagens.Add(new ChatModel("system", $"Não é necessário retornar o tabuleiro atual. Apenas a sua resposta com a jogada."));
+        mensagens.Add(new ChatModel("system", "Voce e um excelente jogador de jogo da velha. Jogue de forma estrategica para ganhar ou, no minimo, empatar a partida."));
+        mensagens.Add(new ChatModel("system", "Responda apenas com a coordenada (linha,coluna) da sua jogada. Exemplo: (0,0)"));
+        mensagens.Add(new ChatModel("system", "Nao e necessario retornar o tabuleiro atual. Apenas a sua resposta com a jogada."));
 
         base.Initialize();
     }
